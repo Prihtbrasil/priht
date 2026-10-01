@@ -58,9 +58,13 @@ tr.t td{font-weight:800;border-bottom:none}
 .btn:hover{background:var(--acd)}
 .btn.alt{background:#fff;border:2px solid var(--ac);color:var(--acd)}
 .sm{padding:7px 11px;border-radius:8px;border:1px solid var(--bd);background:#fff;color:var(--tx);font-size:.82rem;cursor:pointer;font-family:inherit}.sm.del{color:var(--bad)}
-.ing{display:grid;grid-template-columns:2fr 1fr 1fr 1fr .8fr 30px;gap:6px;margin-bottom:8px;align-items:center}
-.ing input{margin:0;padding:9px}.ing .ic{font-size:.8rem;color:var(--acd);font-weight:700;grid-column:1/-1;margin-top:-2px}
-@media(max-width:640px){.ing{grid-template-columns:1fr 1fr 1fr}.ing .in_n{grid-column:1/-1}}
+.nm{border:2px solid var(--ac)}.nm input{font-size:1.15rem;font-weight:700}
+.tw{overflow-x:auto}.ft{min-width:680px}
+.ft th{text-align:left;padding:6px 4px;font-size:.68rem;white-space:nowrap}
+.ft td{padding:4px;border-bottom:1px solid var(--bd);text-align:left;vertical-align:middle;color:var(--tx)}
+.ft input,.ft select{margin:0;padding:8px;font-size:.92rem}
+.ft .ic{font-weight:700;color:var(--acd);white-space:nowrap}
+@media(max-width:700px){.ft{min-width:0}.ft thead{display:none}.ft tr.ing{display:block;border:1px solid var(--bd);border-radius:12px;padding:8px;margin-bottom:10px;background:var(--fld)}.ft td{display:flex;align-items:center;justify-content:space-between;gap:10px;border:0}.ft td::before{content:attr(data-label);font-size:.78rem;color:var(--mut);font-weight:600;flex:none}.ft td input,.ft td select{width:55%}}
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
 @media(max-width:620px){.kpis{grid-template-columns:1fr 1fr}}
 .kpi{background:#fff;border:1px solid var(--bd);border-radius:14px;padding:14px;box-shadow:var(--sh)}
@@ -143,7 +147,7 @@ tr.t td{font-weight:800;border-bottom:none}
 </div>
 <div>
   <div class="card">
-    <h2>Preço correto: <span id="rNome"></span></h2>
+    <h2>Preço correto<span id="rNome"></span></h2>
     <div class="big"><small>Preço de venda</small><strong id="rPreco">-</strong></div>
     <table id="tab"></table>
     <p class="hint" id="rMk" style="margin-top:12px"></p>
@@ -220,8 +224,8 @@ tr.t td{font-weight:800;border-bottom:none}
 /* ===== CONFIGURE AQUI ===== */
 const WHATSAPP='5562996527939';
 const INSTAGRAM='henriquesouna';
-const SB_URL='https://femljqzuttwmfopmssdc.supabase.co';
-const SB_KEY='sb_publishable_g2RHVOSTf3fAsFaI1BbICA_z1HOI8ok';
+const SB_URL='COLE_AQUI_A_PROJECT_URL';
+const SB_KEY='COLE_AQUI_A_CHAVE_PUBLISHABLE';
 const ASAAS_LINK='COLE_AQUI_O_LINK_DE_PAGAMENTO_DO_ASAAS';
 /* ========================== */
 const $=id=>document.getElementById(id);
@@ -235,15 +239,15 @@ const dBR=d=>d?d.split('-').reverse().join('/'):'';
 const TIPO={p:'PRODUTO',s:'SERVIÇO',a:'ALIMENTAÇÃO'};
 /* pct[0] é sempre o lucro */
 const M={
-p:{t:'O produto',h:'Custo do produto = valor de compra + frete até chegar na sua porta.',nome:'Produto exemplo',
+p:{t:'Custo do produto',h:'Custo do produto = valor de compra + frete até chegar na sua porta.',nl:'Nome do produto',ph:'Ex.: Camisa Tommy',
   cust:[['compra','Valor de compra (R$)',25],['frete','Frete até você (R$)',5]],
   pct:[['lucro','Lucro líquido desejado (%)',15,'Lucro líquido'],['imp','Imposto (%)',12,'Imposto'],['com','Comissão do vendedor (%)',2,'Comissão'],['out','Outras taxas: cartão, Pix, plataforma (%)',0,'Outras taxas']],
   lin:()=>[['Custo do produto (compra + frete)',n('compra')+n('frete')]]},
-s:{t:'O serviço',h:'Coloque tudo o que sai do seu bolso para fazer UM serviço: deslocamento, comida, material e o valor da sua hora.',nome:'Serviço exemplo',
+s:{t:'Custo do serviço',h:'Coloque tudo o que sai do seu bolso para fazer UM serviço: deslocamento, comida, material e o valor da sua hora.',nl:'Nome do serviço',ph:'Ex.: Corte feminino ou Pintura de sala',
   cust:[['horas','Horas de trabalho no serviço',4],['vhora','Quanto vale a sua hora (R$)',40],['ajud','Ajudante / equipe (R$)',0],['km','Km ida e volta',20],['ckm','Custo por km: combustível + desgaste (R$)',1.2],['ped','Pedágio / estacionamento (R$)',0],['alim','Almoço + lanche (R$)',35],['mat','Materiais (R$)',0],['ferr','Desgaste de ferramentas (R$)',10]],
   pct:[['slucro','Lucro líquido desejado (%)',15,'Lucro líquido'],['simp','Imposto / DAS (%)',6,'Imposto'],['sout','Taxa de cartão / Pix (%)',2,'Taxas de pagamento'],['simpr','Reserva p/ imprevistos e retrabalho (%)',5,'Imprevistos e retrabalho']],
   lin:()=>[['Sua mão de obra ('+n('horas')+'h)',n('horas')*n('vhora')],['Ajudante / equipe',n('ajud')],['Deslocamento (km + pedágio)',n('km')*n('ckm')+n('ped')],['Alimentação',n('alim')],['Materiais',n('mat')],['Desgaste de ferramentas',n('ferr')]]},
-a:{t:'Produção e custos extras',h:'Informe o rendimento da receita: o custo total é dividido pela quantidade produzida.',nome:'Prato exemplo',
+a:{t:'Produção e custos extras',h:'Informe o rendimento da receita: o custo total é dividido pela quantidade produzida.',nl:'Nome do prato ou produto',ph:'Ex.: Bolo de cenoura',
   cust:[['rend','Rendimento da receita (porções ou unidades)',10],['gas','Gás / energia para fazer a receita (R$)',3],['mh','Horas de trabalho na receita',1.5],['mv','Quanto vale a sua hora (R$)',20],['emb','Embalagem por porção (R$)',0.8]],
   pct:[['alucro','Lucro líquido desejado (%)',15,'Lucro líquido'],['aimp','Imposto / DAS (%)',6,'Imposto'],['ataxa','Taxa de app, cartão ou Pix (%)',4,'Taxas de app e pagamento'],['adesp','Desperdício e sobras (%)',3,'Desperdício']],
   lin:()=>{const r=Math.max(n('rend'),1);return [['Ingredientes (por porção)',ingTot()/r],['Gás e energia (por porção)',n('gas')/r],['Sua mão de obra (por porção)',n('mh')*n('mv')/r],['Embalagem',n('emb')]]}}
@@ -252,15 +256,21 @@ let modo='p',ultimo=null,user=null,lista=[],liberado=true,ac=null;
 const campo=([id,l,v])=>'<label>'+l+'<input id="'+id+'" type="number" inputmode="decimal" step="0.01" value="'+v+'"></label>';
 
 /* ficha técnica */
-const ING0=[['Farinha de trigo',6,1000,500,0],['Ovos (unidades)',18,12,3,0],['Leite (ml)',5,1000,400,0]];
-const ingRow=x=>'<div class="ing"><input class="in_n" placeholder="Ingrediente" value="'+esc(x[0]||'')+'"><input class="in_p" type="number" step="0.01" placeholder="Preço pago R$" value="'+(x[1]||'')+'"><input class="in_q" type="number" step="any" placeholder="Qtd comprada" value="'+(x[2]||'')+'"><input class="in_u" type="number" step="any" placeholder="Qtd usada" value="'+(x[3]||'')+'"><input class="in_x" type="number" step="any" placeholder="Perda %" value="'+(x[4]||'')+'"><button class="sm del" onclick="this.parentNode.remove();calc()">x</button><div class="ic"></div></div>';
-const addIng=()=>$('ings').insertAdjacentHTML('beforeend',ingRow([]));
-const ingDados=()=>[...document.querySelectorAll('#ings .ing')].map(r=>[r.querySelector('.in_n').value,+r.querySelector('.in_p').value||0,+r.querySelector('.in_q').value||0,+r.querySelector('.in_u').value||0,+r.querySelector('.in_x').value||0]);
-const ingCusto=x=>x[2]>0?x[1]*x[3]/x[2]/(1-Math.min(x[4],95)/100):0;
-function ingTot(){let t=0;document.querySelectorAll('#ings .ing').forEach(r=>{const x=[r.querySelector('.in_n').value,+r.querySelector('.in_p').value||0,+r.querySelector('.in_q').value||0,+r.querySelector('.in_u').value||0,+r.querySelector('.in_x').value||0],c=ingCusto(x);r.querySelector('.ic').textContent=x[0]||x[1]?'Custo na receita: '+R(c):'';t+=c});return t}
+const UN={kg:['m',1000],g:['m',1],L:['v',1000],ml:['v',1],un:['u',1]};
+const uOpt=s=>Object.keys(UN).map(u=>'<option'+(u===s?' selected':'')+'>'+u+'</option>').join('');
+const ING0=[['Farinha de trigo',6,1,'kg',500,'g',0],['Ovos',18,12,'un',3,'un',0],['Leite',5,1,'L',400,'ml',0]];
+const ingNorm=x=>x.length===5?[x[0],x[1],x[2],'un',x[3],'un',x[4]]:x;
+const ingRow=x=>'<tr class="ing"><td data-label="Ingrediente"><input class="in_n" placeholder="Ex.: Farinha de trigo" value="'+esc(x[0]||'')+'"></td><td data-label="Preço pago (R$)"><input class="in_p" type="number" step="0.01" value="'+(x[1]||'')+'"></td><td data-label="Qtd comprada"><input class="in_q" type="number" step="any" value="'+(x[2]||'')+'"></td><td data-label="Unid. compra"><select class="in_uc">'+uOpt(x[3])+'</select></td><td data-label="Qtd usada"><input class="in_u" type="number" step="any" value="'+(x[4]||'')+'"></td><td data-label="Unid. uso"><select class="in_uu">'+uOpt(x[5])+'</select></td><td data-label="Perda (%)"><input class="in_x" type="number" step="any" value="'+(x[6]||'')+'"></td><td class="ic" data-label="Custo na receita"></td><td><button class="sm del" onclick="this.closest(\'tr\').remove();calc()">x</button></td></tr>';
+const addIng=()=>$('ings').insertAdjacentHTML('beforeend',ingRow(['','','','kg','','g','']));
+const rowVals=r=>[r.querySelector('.in_n').value,+r.querySelector('.in_p').value||0,+r.querySelector('.in_q').value||0,r.querySelector('.in_uc').value,+r.querySelector('.in_u').value||0,r.querySelector('.in_uu').value,+r.querySelector('.in_x').value||0];
+const ingDados=()=>[...document.querySelectorAll('#ings .ing')].map(rowVals);
+function ingCusto(x){const a=UN[x[3]],b=UN[x[5]];if(a[0]!==b[0])return NaN;return x[2]>0?x[1]*(x[4]*b[1])/(x[2]*a[1])/(1-Math.min(x[6],95)/100):0}
+function ingTot(){let t=0;document.querySelectorAll('#ings .ing').forEach(r=>{const x=rowVals(r),c=ingCusto(x),e=r.querySelector('.ic');
+  if(isNaN(c)){e.innerHTML='<span class="dn">Unidades incompatíveis</span>'}else{e.textContent=(x[0]||x[1])?R(c):'';t+=c}});return t}
+const ficha='<div class="card"><h2>3. Ficha técnica: ingredientes da receita</h2><p class="hint">Um ingrediente por linha. Informe quanto pagou e quanto veio na embalagem, depois quanto usou na receita. O Priht converte kg em g e L em ml sozinho. Exemplo: farinha paga R$ 6,00 por 1 kg, usei 500 g. <strong>Perda</strong> é o que não vai para o prato (cascas, aparas, sobras).</p><div class="tw"><table class="ft"><thead><tr><th>Ingrediente</th><th>Preço pago (R$)</th><th>Qtd comprada</th><th>Unid. compra</th><th>Qtd usada</th><th>Unid. uso</th><th>Perda (%)</th><th>Custo na receita</th><th></th></tr></thead><tbody id="ings">'+ING0.map(ingRow).join('')+'</tbody></table></div><button class="sm" style="margin-top:10px" onclick="addIng()">+ ingrediente</button><div class="pill" id="ingPill"></div></div>';
 
-for(const k in M){const m=M[k],a=k==='a';
-  $('modes').insertAdjacentHTML('beforeend','<div id="m_'+k+'"'+(k==='p'?'':' style="display:none"')+'>'+(a?'<div class="card"><h2>2. Ficha técnica: ingredientes da receita</h2><p class="hint">Liste tudo o que entra na receita. Em cada ingrediente, informe quanto pagou, quanto veio na embalagem e quanto usou, sempre na mesma unidade (g, ml ou unidade). A perda cobre cascas, aparas e sobras. Ex.: farinha paga R$ 6,00 por 1000 g, usei 500 g.</p><div id="ings">'+ING0.map(ingRow).join('')+'</div><button class="sm" onclick="addIng()">+ ingrediente</button><div class="pill" id="ingPill"></div></div>':'')+'<div class="card"><h2>'+(a?'3':'2')+'. '+m.t+'</h2><p class="hint">'+m.h+'</p><div class="g"><label>Nome<input id="nome_'+k+'" type="text" value="'+m.nome+'"></label>'+m.cust.map(campo).join('')+'</div></div><div class="card"><h2>'+(a?'4':'3')+'. Lucro e taxas sobre a venda</h2><p class="hint">Todos os percentuais incidem sobre o preço de venda.</p><div class="g">'+m.pct.map(campo).join('')+'</div></div></div>');}
+for(const k in M){const m=M[k],a=k==='a',s=a?4:3;
+  $('modes').insertAdjacentHTML('beforeend','<div id="m_'+k+'"'+(k==='p'?'':' style="display:none"')+'><div class="card nm"><h2>2. O que você está precificando?</h2><p class="hint">Dê um nome para salvar no histórico e acompanhar o preço ao longo do tempo.</p><label>'+m.nl+'<input id="nome_'+k+'" type="text" placeholder="'+m.ph+'"></label></div>'+(a?ficha:'')+'<div class="card"><h2>'+s+'. '+m.t+'</h2><p class="hint">'+m.h+'</p><div class="g">'+m.cust.map(campo).join('')+'</div></div><div class="card"><h2>'+(s+1)+'. Lucro e taxas sobre a venda</h2><p class="hint">Todos os percentuais incidem sobre o preço de venda.</p><div class="g">'+m.pct.map(campo).join('')+'</div></div></div>');}
 function modoSet(k){modo=k;for(const x in M){$('m_'+x).style.display=x===k?'':'none';$('k_'+x).classList.toggle('on',x===k)}calc()}
 
 /* ===== o cálculo ===== */
@@ -271,7 +281,7 @@ function calc(){
   if(modo==='a'){const r=Math.max(n('rend'),1);$('ingPill').textContent='Ingredientes: '+R(ingTot())+' na receita ('+R(ingTot()/r)+' por porção)'}
   const pc=[['Despesas fixas',dp]].concat(m.pct.map(p=>[p[3],n(p[0])]));
   const tot=pc.reduce((a,p)=>a+p[1],0),erro=$('erro');
-  $('rNome').textContent=$('nome_'+modo).value||'';
+  $('rNome').textContent=$('nome_'+modo).value.trim()?': '+$('nome_'+modo).value.trim():'';
   if(tot>=100||custo<=0){ultimo=null;$('rPreco').textContent='-';
     ['tab','desc','rMk','dHint','beRes','beTab','beBase'].forEach(i=>$(i).innerHTML='');$('beUn').textContent='-';$('aviso').className='al';
     erro.className='al bad';erro.textContent=custo<=0?'Preencha os custos.':'Despesas, lucro e taxas somam '+P(tot)+'. Passam de 100% do preço: reduza algum percentual.';return}
@@ -381,7 +391,7 @@ function hv(i){
 }
 function editar(i){const x=lista[i];modoSet(x.tipo);
   for(const id in x.campos){if(id[0]!=='_'&&$(id))$(id).value=x.campos[id]}
-  if(x.tipo==='a'&&x.campos._ing)$('ings').innerHTML=x.campos._ing.map(ingRow).join('');
+  if(x.tipo==='a'&&x.campos._ing)$('ings').innerHTML=x.campos._ing.map(ingNorm).map(ingRow).join('');
   aba('c');calc();toast('Carregado. Ajuste e salve para registrar a nova versão.')}
 async function excluir(i){
   if(!confirm('Excluir "'+lista[i].nome+'" e todo o seu histórico?'))return;
@@ -391,7 +401,7 @@ async function excluir(i){
 $('btnSalvar').onclick=async()=>{
   const nome=($('nome_'+modo).value||'').trim();
   if(!ultimo){toast('Preencha os dados primeiro.');return}
-  if(!nome){toast('Dê um nome.');return}
+  if(!nome){toast('Digite o nome do que você está precificando.');const e=$('nome_'+modo);e.focus();e.scrollIntoView({behavior:'smooth',block:'center'});return}
   const venda=rd(n('pre')>0?n('pre'):ultimo.preco),custo=rd(ultimo.custo),mg=(venda*(1-ultimo.tx/100)-ultimo.custo-ultimo.du)/venda*100;
   const ant=lista.find(x=>x.tipo===modo&&x.nome.toLowerCase()===nome.toLowerCase()),nm=ant?ant.nome:nome;
   const h=((ant&&ant.campos._hist)||[]).slice(),last=h[h.length-1];
