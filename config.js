@@ -4,5 +4,5 @@ window.PRIHT = {
   INSTAGRAM: 'henriquesouna',
   SB_URL: 'https://femljqzuttwmfopmssdc.supabase.co',            // ex.: https://abcdefgh.supabase.co
   SB_KEY: 'sb_publishable_g2RHVOSTf3fAsFaI1BbICA_z1HOI8ok',       // ex.: sb_publishable_xxxxxxxx
-  ASAAS_LINK: 'COLE_AQUI_O_LINK_DE_PAGAMENTO_DO_ASAAS'
+  ASAAS_LINK: 'https://www.asaas.com/000/c/i0fezgzfoeog60io'
 };
