@@ -59,12 +59,13 @@ tr.t td{font-weight:800;border-bottom:none}
 .btn.alt{background:#fff;border:2px solid var(--ac);color:var(--acd)}
 .sm{padding:7px 11px;border-radius:8px;border:1px solid var(--bd);background:#fff;color:var(--tx);font-size:.82rem;cursor:pointer;font-family:inherit}.sm.del{color:var(--bad)}
 .nm{border:2px solid var(--ac)}.nm input{font-size:1.15rem;font-weight:700}
-.tw{overflow-x:auto}.ft{min-width:680px}
-.ft th{text-align:left;padding:6px 4px;font-size:.68rem;white-space:nowrap}
-.ft td{padding:4px;border-bottom:1px solid var(--bd);text-align:left;vertical-align:middle;color:var(--tx)}
-.ft input,.ft select{margin:0;padding:8px;font-size:.92rem}
-.ft .ic{font-weight:700;color:var(--acd);white-space:nowrap}
-@media(max-width:700px){.ft{min-width:0}.ft thead{display:none}.ft tr.ing{display:block;border:1px solid var(--bd);border-radius:12px;padding:8px;margin-bottom:10px;background:var(--fld)}.ft td{display:flex;align-items:center;justify-content:space-between;gap:10px;border:0}.ft td::before{content:attr(data-label);font-size:.78rem;color:var(--mut);font-weight:600;flex:none}.ft td input,.ft td select{width:55%}}
+.ing{border:1.5px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px;background:var(--fld)}
+.ing input,.ing select{background:#fff}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+@media(max-width:520px){.g3{grid-template-columns:1fr 1fr}}
+.ifoot{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.ic{font-weight:700;color:var(--acd);font-size:.9rem}
+.fm{margin:0 0 10px;font-size:.88rem}.fm b{color:var(--acd)}
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
 @media(max-width:620px){.kpis{grid-template-columns:1fr 1fr}}
 .kpi{background:#fff;border:1px solid var(--bd);border-radius:14px;padding:14px;box-shadow:var(--sh)}
@@ -165,10 +166,7 @@ tr.t td{font-weight:800;border-bottom:none}
     <p class="hint" id="dHint"></p>
     <table id="desc"></table>
   </div>
-  <div class="card">
-    <h2>Como o Priht calcula</h2>
-    <p class="hint" style="margin:0">Preço = custo ÷ (1 − despesas fixas − lucro − impostos e taxas). Tudo isso é parte do preço de venda, por isso dividimos pelo complemento em vez de somar percentuais ao custo. Exemplo: custo de R$ 30,00, 16% de despesas, 15% de lucro, 12% de imposto e 2% de comissão resulta em R$ 54,55, e cada parte fecha exatamente dentro do preço.</p>
-  </div>
+  <div class="card"><h2>Fórmula aplicada</h2><div id="formula"></div><p class="hint" style="margin:0">Despesas, lucro e taxas são partes do preço de venda. Por isso dividimos pelo complemento (1 − soma dos percentuais), em vez de somar percentuais ao custo.</p></div>
 </div>
 </div></section>
 
@@ -220,14 +218,11 @@ tr.t td{font-weight:800;border-bottom:none}
 </footer>
 <div id="toast" class="toast"></div>
 
+<script src="config.js"></script>
 <script>
-/* ===== CONFIGURE AQUI ===== */
-const WHATSAPP='5562996527939';
-const INSTAGRAM='henriquesouna';
-const SB_URL='https://femljqzuttwmfopmssdc.supabase.co';
-const SB_KEY='sb_publishable_g2RHVOSTf3fAsFaI1BbICA_z1HOI8ok';
-const ASAAS_LINK='COLE_AQUI_O_LINK_DE_PAGAMENTO_DO_ASAAS';
-/* ========================== */
+/* As chaves ficam no arquivo config.js (assim você atualiza o index.html sem colar tudo de novo) */
+const C=window.PRIHT||{};
+const WHATSAPP=C.WHATSAPP||'5562996527939',INSTAGRAM=C.INSTAGRAM||'henriquesouna',SB_URL=C.SB_URL||'',SB_KEY=C.SB_KEY||'',ASAAS_LINK=C.ASAAS_LINK||'#';
 const $=id=>document.getElementById(id);
 const n=id=>parseFloat($(id).value)||0;
 const R=v=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -239,18 +234,18 @@ const dBR=d=>d?d.split('-').reverse().join('/'):'';
 const TIPO={p:'PRODUTO',s:'SERVIÇO',a:'ALIMENTAÇÃO'};
 /* pct[0] é sempre o lucro */
 const M={
-p:{t:'Custo do produto',h:'Custo do produto = valor de compra + frete até chegar na sua porta.',nl:'Nome do produto',ph:'Ex.: Camisa Tommy',
-  cust:[['compra','Valor de compra (R$)',25],['frete','Frete até você (R$)',5]],
+p:{t:'Custo do produto',h:'Custo = valor de compra + frete de compra + frete de entrega (se você paga). Se o cliente paga a entrega, deixe o frete de entrega em 0.',nl:'Nome do produto',ph:'Ex.: Camisa Tommy',
+  cust:[['compra','Valor de compra (R$)',25],['frete','Frete de compra, até chegar na sua porta (R$)',5],['fent','Frete de entrega ao cliente, se você paga (R$)',0]],
   pct:[['lucro','Lucro líquido desejado (%)',15,'Lucro líquido'],['imp','Imposto (%)',12,'Imposto'],['com','Comissão do vendedor (%)',2,'Comissão'],['out','Outras taxas: cartão, Pix, plataforma (%)',0,'Outras taxas']],
-  lin:()=>[['Custo do produto (compra + frete)',n('compra')+n('frete')]]},
+  lin:()=>[['Valor de compra',n('compra')],['Frete de compra',n('frete')],['Frete de entrega ao cliente',n('fent')]]},
 s:{t:'Custo do serviço',h:'Coloque tudo o que sai do seu bolso para fazer UM serviço: deslocamento, comida, material e o valor da sua hora.',nl:'Nome do serviço',ph:'Ex.: Corte feminino ou Pintura de sala',
   cust:[['horas','Horas de trabalho no serviço',4],['vhora','Quanto vale a sua hora (R$)',40],['ajud','Ajudante / equipe (R$)',0],['km','Km ida e volta',20],['ckm','Custo por km: combustível + desgaste (R$)',1.2],['ped','Pedágio / estacionamento (R$)',0],['alim','Almoço + lanche (R$)',35],['mat','Materiais (R$)',0],['ferr','Desgaste de ferramentas (R$)',10]],
   pct:[['slucro','Lucro líquido desejado (%)',15,'Lucro líquido'],['simp','Imposto / DAS (%)',6,'Imposto'],['sout','Taxa de cartão / Pix (%)',2,'Taxas de pagamento'],['simpr','Reserva p/ imprevistos e retrabalho (%)',5,'Imprevistos e retrabalho']],
   lin:()=>[['Sua mão de obra ('+n('horas')+'h)',n('horas')*n('vhora')],['Ajudante / equipe',n('ajud')],['Deslocamento (km + pedágio)',n('km')*n('ckm')+n('ped')],['Alimentação',n('alim')],['Materiais',n('mat')],['Desgaste de ferramentas',n('ferr')]]},
 a:{t:'Produção e custos extras',h:'Informe o rendimento da receita: o custo total é dividido pela quantidade produzida.',nl:'Nome do prato ou produto',ph:'Ex.: Bolo de cenoura',
-  cust:[['rend','Rendimento da receita (porções ou unidades)',10],['gas','Gás / energia para fazer a receita (R$)',3],['mh','Horas de trabalho na receita',1.5],['mv','Quanto vale a sua hora (R$)',20],['emb','Embalagem por porção (R$)',0.8]],
+  cust:[['rend','Rendimento da receita (porções ou unidades)',10],['gas','Gás / energia para fazer a receita (R$)',3],['mh','Horas de trabalho na receita',1.5],['mv','Quanto vale a sua hora (R$)',20],['emb','Embalagem por porção (R$)',0.8],['aent','Entrega ao cliente por porção, se você paga (R$)',0]],
   pct:[['alucro','Lucro líquido desejado (%)',15,'Lucro líquido'],['aimp','Imposto / DAS (%)',6,'Imposto'],['ataxa','Taxa de app, cartão ou Pix (%)',4,'Taxas de app e pagamento'],['adesp','Desperdício e sobras (%)',3,'Desperdício']],
-  lin:()=>{const r=Math.max(n('rend'),1);return [['Ingredientes (por porção)',ingTot()/r],['Gás e energia (por porção)',n('gas')/r],['Sua mão de obra (por porção)',n('mh')*n('mv')/r],['Embalagem',n('emb')]]}}
+  lin:()=>{const r=Math.max(n('rend'),1);return [['Ingredientes (por porção)',ingTot()/r],['Gás e energia (por porção)',n('gas')/r],['Sua mão de obra (por porção)',n('mh')*n('mv')/r],['Embalagem',n('emb')],['Entrega ao cliente',n('aent')]]}}
 };
 let modo='p',ultimo=null,user=null,lista=[],liberado=true,ac=null;
 const campo=([id,l,v])=>'<label>'+l+'<input id="'+id+'" type="number" inputmode="decimal" step="0.01" value="'+v+'"></label>';
@@ -260,14 +255,14 @@ const UN={kg:['m',1000],g:['m',1],L:['v',1000],ml:['v',1],un:['u',1]};
 const uOpt=s=>Object.keys(UN).map(u=>'<option'+(u===s?' selected':'')+'>'+u+'</option>').join('');
 const ING0=[['Farinha de trigo',6,1,'kg',500,'g',0],['Ovos',18,12,'un',3,'un',0],['Leite',5,1,'L',400,'ml',0]];
 const ingNorm=x=>x.length===5?[x[0],x[1],x[2],'un',x[3],'un',x[4]]:x;
-const ingRow=x=>'<tr class="ing"><td data-label="Ingrediente"><input class="in_n" placeholder="Ex.: Farinha de trigo" value="'+esc(x[0]||'')+'"></td><td data-label="Preço pago (R$)"><input class="in_p" type="number" step="0.01" value="'+(x[1]||'')+'"></td><td data-label="Qtd comprada"><input class="in_q" type="number" step="any" value="'+(x[2]||'')+'"></td><td data-label="Unid. compra"><select class="in_uc">'+uOpt(x[3])+'</select></td><td data-label="Qtd usada"><input class="in_u" type="number" step="any" value="'+(x[4]||'')+'"></td><td data-label="Unid. uso"><select class="in_uu">'+uOpt(x[5])+'</select></td><td data-label="Perda (%)"><input class="in_x" type="number" step="any" value="'+(x[6]||'')+'"></td><td class="ic" data-label="Custo na receita"></td><td><button class="sm del" onclick="this.closest(\'tr\').remove();calc()">x</button></td></tr>';
+const ingRow=x=>'<div class="ing"><label>Ingrediente<input class="in_n" placeholder="Ex.: Farinha de trigo" value="'+esc(x[0]||'')+'"></label><div class="g3"><label>Preço pago (R$)<input class="in_p" type="number" step="0.01" value="'+(x[1]||'')+'"></label><label>Quantidade comprada<input class="in_q" type="number" step="any" value="'+(x[2]||'')+'"></label><label>Unidade da compra<select class="in_uc">'+uOpt(x[3])+'</select></label><label>Quantidade usada na receita<input class="in_u" type="number" step="any" value="'+(x[4]||'')+'"></label><label>Unidade de uso<select class="in_uu">'+uOpt(x[5])+'</select></label><label>Perda (%)<input class="in_x" type="number" step="any" value="'+(x[6]||'')+'"></label></div><div class="ifoot"><span class="ic"></span><button class="sm del" onclick="this.closest(\'.ing\').remove();calc()">Remover ingrediente</button></div></div>';
 const addIng=()=>$('ings').insertAdjacentHTML('beforeend',ingRow(['','','','kg','','g','']));
 const rowVals=r=>[r.querySelector('.in_n').value,+r.querySelector('.in_p').value||0,+r.querySelector('.in_q').value||0,r.querySelector('.in_uc').value,+r.querySelector('.in_u').value||0,r.querySelector('.in_uu').value,+r.querySelector('.in_x').value||0];
 const ingDados=()=>[...document.querySelectorAll('#ings .ing')].map(rowVals);
 function ingCusto(x){const a=UN[x[3]],b=UN[x[5]];if(a[0]!==b[0])return NaN;return x[2]>0?x[1]*(x[4]*b[1])/(x[2]*a[1])/(1-Math.min(x[6],95)/100):0}
 function ingTot(){let t=0;document.querySelectorAll('#ings .ing').forEach(r=>{const x=rowVals(r),c=ingCusto(x),e=r.querySelector('.ic');
   if(isNaN(c)){e.innerHTML='<span class="dn">Unidades incompatíveis</span>'}else{e.textContent=(x[0]||x[1])?R(c):'';t+=c}});return t}
-const ficha='<div class="card"><h2>3. Ficha técnica: ingredientes da receita</h2><p class="hint">Um ingrediente por linha. Informe quanto pagou e quanto veio na embalagem, depois quanto usou na receita. O Priht converte kg em g e L em ml sozinho. Exemplo: farinha paga R$ 6,00 por 1 kg, usei 500 g. <strong>Perda</strong> é o que não vai para o prato (cascas, aparas, sobras).</p><div class="tw"><table class="ft"><thead><tr><th>Ingrediente</th><th>Preço pago (R$)</th><th>Qtd comprada</th><th>Unid. compra</th><th>Qtd usada</th><th>Unid. uso</th><th>Perda (%)</th><th>Custo na receita</th><th></th></tr></thead><tbody id="ings">'+ING0.map(ingRow).join('')+'</tbody></table></div><button class="sm" style="margin-top:10px" onclick="addIng()">+ ingrediente</button><div class="pill" id="ingPill"></div></div>';
+const ficha='<div class="card"><h2>3. Ficha técnica: ingredientes da receita</h2><p class="hint">Um bloco por ingrediente. Informe quanto pagou e quanto veio na embalagem, depois quanto usou na receita. O Priht converte kg em g e L em ml sozinho. Exemplo: farinha paga R$ 6,00 por 1 kg, usei 500 g. <strong>Perda</strong> é o que não vai para o prato (cascas, aparas, sobras).</p><div id="ings">'+ING0.map(ingRow).join('')+'</div><button class="sm" onclick="addIng()">+ Adicionar ingrediente</button><div class="pill" id="ingPill"></div></div>';
 
 for(const k in M){const m=M[k],a=k==='a',s=a?4:3;
   $('modes').insertAdjacentHTML('beforeend','<div id="m_'+k+'"'+(k==='p'?'':' style="display:none"')+'><div class="card nm"><h2>2. O que você está precificando?</h2><p class="hint">Dê um nome para salvar no histórico e acompanhar o preço ao longo do tempo.</p><label>'+m.nl+'<input id="nome_'+k+'" type="text" placeholder="'+m.ph+'"></label></div>'+(a?ficha:'')+'<div class="card"><h2>'+s+'. '+m.t+'</h2><p class="hint">'+m.h+'</p><div class="g">'+m.cust.map(campo).join('')+'</div></div><div class="card"><h2>'+(s+1)+'. Lucro e taxas sobre a venda</h2><p class="hint">Todos os percentuais incidem sobre o preço de venda.</p><div class="g">'+m.pct.map(campo).join('')+'</div></div></div>');}
@@ -283,7 +278,7 @@ function calc(){
   const tot=pc.reduce((a,p)=>a+p[1],0),erro=$('erro');
   $('rNome').textContent=$('nome_'+modo).value.trim()?': '+$('nome_'+modo).value.trim():'';
   if(tot>=100||custo<=0){ultimo=null;$('rPreco').textContent='-';
-    ['tab','desc','rMk','dHint','beRes','beTab','beBase'].forEach(i=>$(i).innerHTML='');$('beUn').textContent='-';$('aviso').className='al';
+    ['tab','desc','rMk','dHint','beRes','beTab','beBase','formula'].forEach(i=>$(i).innerHTML='');$('beUn').textContent='-';$('aviso').className='al';
     erro.className='al bad';erro.textContent=custo<=0?'Preencha os custos.':'Despesas, lucro e taxas somam '+P(tot)+'. Passam de 100% do preço: reduza algum percentual.';return}
   erro.className='al';
   /* modelo: tx = % variáveis sobre a venda; du = despesa fixa em R$ rateada por unidade (não muda com desconto) */
@@ -292,6 +287,7 @@ function calc(){
   const piso=(custo+du)/(1-tx/100),pisoCaixa=custo/(1-tx/100);
   ultimo={preco,custo,tx,lucro:lucroP,piso,du};
   $('rPreco').textContent=R(preco);
+  {const fx=tot/100,nf=v=>v.toLocaleString('pt-BR',{maximumFractionDigits:4});$('formula').innerHTML='<p class="fm"><b>1. Custo</b><br>'+lin.filter(l=>l[1]>0).map(l=>l[0]+' '+R(l[1])).join(' + ')+' = <b>'+R(custo)+'</b></p><p class="fm"><b>2. Percentuais sobre a venda</b><br>'+pc.filter(p=>p[1]>0).map(p=>p[0]+' '+P(p[1])).join(' + ')+' = <b>'+P(tot)+'</b></p><p class="fm"><b>3. Preço de venda</b><br>Custo ÷ (1 − '+nf(fx)+') = '+R(custo)+' ÷ '+nf(1-fx)+' = <b>'+R(preco)+'</b></p><p class="fm"><b>4. Prova real</b><br>'+R(preco)+' − '+P(tot)+' ('+R(preco*fx)+') = '+R(preco-preco*fx)+'</p>'}
   $('tab').innerHTML=lin.filter(l=>l[1]>0).map(l=>'<tr><td>'+l[0]+'</td><td></td><td>'+R(l[1])+'</td></tr>').join('')
    +'<tr class="t"><td>Custo total</td><td></td><td>'+R(custo)+'</td></tr>'
    +pc.filter(p=>p[1]>0).map(p=>'<tr><td>'+p[0]+'</td><td>'+P(p[1])+'</td><td>'+R(preco*p[1]/100)+'</td></tr>').join('')
@@ -389,7 +385,7 @@ function hv(i){
   e.innerHTML=spark(h)+(h.length?'<table style="margin-top:8px"><tr><th>Data</th><th>Preço</th><th>Custo</th></tr>'+h.slice().reverse().map(x=>'<tr><td>'+dBR(x.d)+'</td><td>'+R(x.v)+'</td><td>'+R(x.c)+'</td></tr>').join('')+'</table>':'');
   e.style.display='block';
 }
-function editar(i){const x=lista[i];modoSet(x.tipo);
+function editar(i){const x=lista[i];modoSet(x.tipo);M[x.tipo].cust.concat(M[x.tipo].pct).forEach(f=>{$(f[0]).value=f[2]});
   for(const id in x.campos){if(id[0]!=='_'&&$(id))$(id).value=x.campos[id]}
   if(x.tipo==='a'&&x.campos._ing)$('ings').innerHTML=x.campos._ing.map(ingNorm).map(ingRow).join('');
   aba('c');calc();toast('Carregado. Ajuste e salve para registrar a nova versão.')}
