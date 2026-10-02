@@ -22,6 +22,7 @@ body{margin:0;background:var(--bg);color:var(--tx);font-family:Inter,system-ui,-
 .chips span{background:rgba(47,224,143,.12);border:1px solid rgba(47,224,143,.4);color:#8bf5c3;padding:5px 12px;border-radius:999px;font-size:.8rem;font-weight:600}
 #ubar{font-size:.8rem;color:#b6d3c4;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 #ubar .sm{border-color:rgba(255,255,255,.3);color:#fff}
+#ubar .sm.cta{background:#0bb877;border-color:#0bb877;color:#03140d;font-weight:800;text-decoration:none;display:inline-block}
 .nav{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--bd);box-shadow:0 2px 10px rgba(10,26,20,.05)}
 .tabs{display:flex;gap:6px;overflow-x:auto;padding:10px 0}
 .tabs button{flex:none;padding:10px 18px;border:0;background:none;color:var(--mut);font-size:.95rem;font-weight:700;cursor:pointer;border-radius:999px;white-space:nowrap;font-family:inherit}
@@ -331,7 +332,10 @@ function ui(){
   $('auth').style.display=cloud&&!user?'flex':'none';
   $('wall').style.display=cloud&&user&&!liberado?'flex':'none';
   let s='';
-  if(user){const ate=ac?ac.ate:'';s=esc(user.email)+(ac?' &middot; '+(ate>'2090'?'Acesso fundador':(ac.plano==='teste'?'Teste grátis até ':'Assinatura até ')+dBR(ate)):'')+' <button class="sm" onclick="sair()">Sair</button>'}
+  const cta='<a class="sm cta" href="'+ASAAS_LINK+'" target="_blank" rel="noopener">Assinar agora</a> ';
+  if(user){const ate=ac?ac.ate:'',dias=ac?Math.ceil((new Date(ate+'T12:00:00')-new Date(iso()+'T12:00:00'))/864e5):0;
+    s=esc(user.email)+(ac?' &middot; '+(ate>'2090'?'Acesso fundador':ac.plano==='teste'?'Teste grátis: '+(dias>0?'faltam '+dias+(dias===1?' dia':' dias'):'termina hoje'):'Assinatura até '+dBR(ate)):'')+' '+(ac&&ac.plano==='teste'?cta:'')+'<button class="sm" onclick="sair()">Sair</button>'}
+  else if(!cloud)s=cta;
   $('ubar').innerHTML=s;
   $('lHint').textContent=user?'Salvo na nuvem. Acesse de qualquer aparelho com o seu login.':'Salvo só neste aparelho (modo demonstração).';
   $('lnkAssinar').href=ASAAS_LINK;
