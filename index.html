@@ -109,6 +109,7 @@ tr.t td{font-weight:800;border-bottom:none}
   <p class="hint">Seu usuário é o e-mail. Seus preços ficam guardados na nuvem.</p>
   <label>E-mail<input id="em" type="email" autocomplete="email"></label>
   <label style="margin-top:10px">Senha (mínimo 6 caracteres)<input id="pw" type="password" autocomplete="current-password"></label>
+  <div id="ts" style="margin-top:12px;display:flex;justify-content:center"></div>
   <div id="aerr" class="al bad" style="display:none"></div>
   <button class="btn" onclick="entrar(false)">Entrar</button>
   <button class="btn alt" onclick="entrar(true)">Criar conta (7 dias grátis)</button>
@@ -247,7 +248,7 @@ tr.t td{font-weight:800;border-bottom:none}
 <script>
 /* As chaves ficam no arquivo config.js (assim você atualiza o index.html sem colar tudo de novo) */
 const C=window.PRIHT||{};
-const WHATSAPP=C.WHATSAPP||'5562996527939',INSTAGRAM=C.INSTAGRAM||'usepriht',SB_URL=C.SB_URL||'',SB_KEY=C.SB_KEY||'',ASAAS_LINK=C.ASAAS_LINK||'#';
+const WHATSAPP=C.WHATSAPP||'5562996527939',INSTAGRAM=C.INSTAGRAM||'usepriht',SB_URL=C.SB_URL||'',SB_KEY=C.SB_KEY||'',ASAAS_LINK=C.ASAAS_LINK||'#',TURNSTILE_KEY=C.TURNSTILE_KEY||'',CF_ANALYTICS=C.CF_ANALYTICS||'';
 const $=id=>document.getElementById(id);
 const n=id=>parseFloat($(id).value)||0;
 const R=v=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -350,10 +351,11 @@ const cloud=SB_URL.indexOf('https://')===0&&typeof supabase!=='undefined';
 const sb=cloud?supabase.createClient(SB_URL,SB_KEY):null;
 const KEY='priht_lista';
 function toast(m){const t=$('toast');t.textContent=m;t.className='toast on';setTimeout(()=>t.className='toast',2600)}
-const ERR={'Invalid login credentials':'E-mail ou senha incorretos.','Email not confirmed':'Confirme seu e-mail antes de entrar.','User already registered':'Este e-mail já tem conta. Toque em Entrar.'};
+const ERR={'captcha protection: request disallowed (invalid-input-response)':'A verificação de segurança expirou. Tente de novo.','captcha verification process failed':'A verificação de segurança falhou. Tente de novo.','Invalid login credentials':'E-mail ou senha incorretos.','Email not confirmed':'Confirme seu e-mail antes de entrar.','User already registered':'Este e-mail já tem conta. Toque em Entrar.'};
 function ui(){
   $('demo').style.display=cloud?'none':'block';
   $('auth').style.display=cloud&&!user?'flex':'none';
+  if(cloud&&!user)iniCap();
   $('wall').style.display=cloud&&user&&!liberado?'flex':'none';
   let s='';
   const cta='<a class="sm cta" href="'+ASAAS_LINK+'" target="_blank" rel="noopener">Assinar agora</a> ';
@@ -364,15 +366,29 @@ function ui(){
   $('lHint').textContent=user?'Salvo na nuvem. Acesse de qualquer aparelho com o seu login.':'Salvo só neste aparelho (modo demonstração).';
   $('lnkAssinar').href=ASAAS_LINK;
 }
+/* verificação anti-robô (Cloudflare Turnstile): só ativa se TURNSTILE_KEY estiver no config.js */
+let capTok='',tsId=null,tsOn=false;
+function iniCap(){
+  if(!TURNSTILE_KEY||tsOn)return;tsOn=true;
+  const sc=document.createElement('script');sc.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';sc.async=true;
+  sc.onload=()=>{tsId=turnstile.render('#ts',{sitekey:TURNSTILE_KEY,callback:t=>{capTok=t},'expired-callback':()=>{capTok=''},'error-callback':()=>{capTok=''}})};
+  document.head.appendChild(sc);
+}
+const capReset=()=>{capTok='';if(TURNSTILE_KEY&&window.turnstile&&tsId!==null)turnstile.reset(tsId)};
 async function entrar(novo){
   const email=$('em').value.trim(),password=$('pw').value,e=$('aerr');e.style.display='none';
-  const r=novo?await sb.auth.signUp({email,password}):await sb.auth.signInWithPassword({email,password});
+  if(TURNSTILE_KEY&&!capTok){e.textContent='Aguarde a verificação de segurança terminar e tente de novo.';e.style.display='block';return}
+  const opt=TURNSTILE_KEY?{captchaToken:capTok}:{};
+  const r=novo?await sb.auth.signUp({email,password,options:opt}):await sb.auth.signInWithPassword({email,password,options:opt});
+  capReset();
   if(r.error){e.textContent=ERR[r.error.message]||r.error.message;e.style.display='block';return}
   if(novo&&!r.data.session){e.textContent='Conta criada. Confirme o e-mail que enviamos e depois toque em Entrar.';e.style.display='block'}
 }
 async function esqueci(){const email=$('em').value.trim(),e=$('aerr');
   if(!email){e.textContent='Digite seu e-mail e toque de novo em "Esqueci minha senha".';e.style.display='block';return}
-  await sb.auth.resetPasswordForEmail(email,{redirectTo:location.href.split('#')[0]});e.textContent='Enviamos um link para redefinir a senha no seu e-mail.';e.style.display='block'}
+  if(TURNSTILE_KEY&&!capTok){e.textContent='Aguarde a verificação de segurança terminar e tente de novo.';e.style.display='block';return}
+  const r=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.href.split('#')[0],captchaToken:TURNSTILE_KEY?capTok:undefined});capReset();
+  e.textContent=r&&r.error?(ERR[r.error.message]||r.error.message):'Enviamos um link para redefinir a senha no seu e-mail.';e.style.display='block'}
 async function sair(){await sb.auth.signOut();lista=[];ac=null;render()}
 async function refresh(){
   if(cloud&&user){const {data}=await sb.from('acessos').select('ate,plano').eq('user_id',user.id).maybeSingle();ac=data;liberado=!!data&&data.ate>=iso()}
@@ -523,6 +539,7 @@ function csvMov(t){
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+l.join('\n')],{type:'text/csv;charset=utf-8'}));a.download=t==='v'?'priht-vendas.csv':'priht-despesas.csv';a.click();
 }
 
+if(CF_ANALYTICS){const a=document.createElement('script');a.defer=true;a.src='https://static.cloudflareinsights.com/beacon.min.js';a.setAttribute('data-cf-beacon',JSON.stringify({token:CF_ANALYTICS}));document.head.appendChild(a)}
 $('lnkWa').href='https://wa.me/'+WHATSAPP+'?text='+encodeURIComponent('Olá! Conheci o Priht e quero ajuda com a precificação do meu negócio.');
 $('lnkIg').href='https://instagram.com/'+INSTAGRAM;
 document.addEventListener('input',e=>{if(e.target.closest('#tabCalc,#tabBE'))calc()});
